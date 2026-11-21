@@ -23,11 +23,20 @@
     const toggle = $('[data-nav-toggle]', header);
     const nav = $('[data-nav]', header);
     if (toggle && nav) {
+      // Phone menu starts right under the header, wherever the header is on screen
+      const place = () => nav.style.setProperty('--nav-top', `${Math.max(0, Math.round(header.getBoundingClientRect().bottom))}px`);
       toggle.addEventListener('click', () => {
+        place();
         const open = nav.classList.toggle('is-open');
         toggle.setAttribute('aria-expanded', String(open));
         document.body.style.overflow = open ? 'hidden' : '';
       });
+      window.addEventListener('resize', () => { if (nav.classList.contains('is-open')) place(); });
+      // Sections with sub-pages fold open on tap (phone menu); the arrow buttons are hidden on desktop
+      $$('.nav__expand', nav).forEach((btn) => btn.addEventListener('click', () => {
+        const open = btn.closest('.nav__item').classList.toggle('is-expanded');
+        btn.setAttribute('aria-expanded', String(open));
+      }));
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && nav.classList.contains('is-open')) { nav.classList.remove('is-open'); toggle.setAttribute('aria-expanded', 'false'); document.body.style.overflow = ''; toggle.focus(); }
       });
