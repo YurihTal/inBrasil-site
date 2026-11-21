@@ -281,18 +281,38 @@
     const controls = $$('[data-filter]', root);
     const count = $('[data-result-count]', root);
     const empty = $('[data-empty]', root);
+    const groups = $$('[data-group]', root);
+    const families = $$('[data-family-group]', root);
+    // Search also matches the product and family name, since rows inside a product group show only the colour or language
+    const hay = new Map(items.map((item) => {
+      const group = item.closest('[data-group]');
+      const fam = item.closest('[data-family-group]');
+      const extra = `${group ? ($('summary', group) || group).textContent : ''} ${fam ? fam.dataset.familyName || '' : ''}`;
+      return [item, `${item.textContent} ${extra}`.toLowerCase()];
+    }));
+    let wasActive = false;
     const run = () => {
       let shown = 0;
+      const active = controls.some((c) => c.value.trim());
       items.forEach((item) => {
         const ok = controls.every((c) => {
           const v = c.value.trim().toLowerCase();
           if (!v) return true;
-          if (c.dataset.filter === 'q') return item.textContent.toLowerCase().includes(v);
+          if (c.dataset.filter === 'q') return hay.get(item).includes(v);
           return (item.dataset[c.dataset.filter] || '').toLowerCase().split('|').includes(v);
         });
         item.hidden = !ok;
         if (ok) shown += 1;
       });
+      // Hide product groups and families with nothing left; open matching groups while filtering, close them again when cleared
+      groups.forEach((g) => {
+        const visible = $$('[data-item]', g).some((i) => !i.hidden);
+        g.hidden = !visible;
+        if (active) g.open = visible;
+        else if (wasActive) g.open = false;
+      });
+      families.forEach((f) => { f.hidden = !$$('[data-item]', f).some((i) => !i.hidden); });
+      wasActive = active;
       if (count) count.textContent = count.dataset.template.replace('[count]', shown);
       if (empty) empty.hidden = shown !== 0;
     };
